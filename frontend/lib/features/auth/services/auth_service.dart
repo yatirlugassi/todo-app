@@ -4,7 +4,11 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:todo_app/core/models/user_model.dart';
 import 'package:todo_app/core/config/env_config.dart';
 
+/// @deprecated Use AuthApiService and AuthRepository instead
 /// Service class for handling authentication operations through the backend API
+/// This class combines service and repository responsibilities and should be
+/// refactored to follow the architecture guidelines
+@Deprecated('Use AuthApiService and AuthRepository instead')
 class AuthService {
   final String _baseUrl = '${EnvConfig.apiBaseUrl}/api/auth';
   final _storage = const FlutterSecureStorage();

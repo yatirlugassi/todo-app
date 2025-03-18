@@ -1,7 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:todo_app/core/models/user_model.dart';
-import 'package:todo_app/features/auth/services/auth_service.dart';
+import 'package:todo_app/features/auth/repositories/auth_repository.dart';
+import 'package:todo_app/features/auth/services/auth_api_service.dart';
 
 // Generate the providers
 part 'auth_provider.g.dart';
@@ -15,11 +16,21 @@ enum AuthState {
   error,
 }
 
-// Auth service provider
-@riverpod
-AuthService authService(AuthServiceRef ref) {
-  return AuthService();
-}
+// AuthApiService provider using standard Provider instead of riverpod annotation
+final authApiServiceProvider = Provider<AuthApiService>((ref) {
+  final service = AuthApiService();
+  ref.onDispose(() {
+    service.dispose();
+  });
+  return service;
+});
+
+// AuthRepository provider using standard Provider instead of riverpod annotation
+final authRepositoryProvider = Provider<AuthRepository>((ref) {
+  return AuthRepository(
+    authService: ref.watch(authApiServiceProvider),
+  );
+});
 
 // Auth state provider
 @riverpod
@@ -29,10 +40,12 @@ class Auth extends _$Auth {
     return const AsyncValue.data(AuthState.initial);
   }
 
+  AuthRepository get _repository => ref.read(authRepositoryProvider);
+
   Future<void> initialize() async {
     state = const AsyncValue.loading();
     try {
-      final isAuthenticated = await ref.read(authServiceProvider).isAuthenticated();
+      final isAuthenticated = await _repository.isAuthenticated();
       state = AsyncValue.data(
         isAuthenticated ? AuthState.authenticated : AuthState.unauthenticated,
       );
@@ -44,7 +57,7 @@ class Auth extends _$Auth {
   Future<void> signIn(String email, String password) async {
     state = const AsyncValue.loading();
     try {
-      await ref.read(authServiceProvider).signIn(email, password);
+      await _repository.signIn(email, password);
       state = const AsyncValue.data(AuthState.authenticated);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
@@ -54,7 +67,7 @@ class Auth extends _$Auth {
   Future<void> signOut() async {
     state = const AsyncValue.loading();
     try {
-      await ref.read(authServiceProvider).signOut();
+      await _repository.signOut();
       state = const AsyncValue.data(AuthState.unauthenticated);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
@@ -64,11 +77,11 @@ class Auth extends _$Auth {
 
 // Current user provider
 @riverpod
-Future<UserModel?> currentUser(CurrentUserRef ref) async {
+Future<UserModel?> currentUser(Ref ref) async {
   final authState = ref.watch(authProvider);
   
   if (authState.value == AuthState.authenticated) {
-    return ref.read(authServiceProvider).getCurrentUser();
+    return ref.read(authRepositoryProvider).getCurrentUser();
   }
   
   return null;
