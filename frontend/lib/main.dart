@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:todo_app/core/services/supabase_service.dart';
-import 'package:todo_app/features/auth/providers/auth_provider.dart';
+import 'package:todo_app/features/auth/models/auth_state.dart';
+import 'package:todo_app/features/auth/providers/providers.dart';
 import 'package:todo_app/features/auth/screens/login_screen.dart';
 import 'package:todo_app/features/home/screens/home_screen.dart';
 
