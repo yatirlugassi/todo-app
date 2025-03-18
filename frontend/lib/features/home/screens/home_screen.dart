@@ -7,7 +7,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider);
+    final userAsync = ref.watch(currentUserProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -22,24 +22,28 @@ class HomeScreen extends ConsumerWidget {
         ],
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              'Welcome to Todo App!',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Logged in as: ${user?.email ?? 'Unknown'}',
-              style: const TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              'This is a placeholder for the Todo app features.',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-          ],
+        child: userAsync.when(
+          data: (user) => Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Welcome to Todo App!',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Logged in as: ${user?.email ?? 'Unknown'}',
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 32),
+              const Text(
+                'This is a placeholder for the Todo app features.',
+                style: TextStyle(fontSize: 16, color: Colors.grey),
+              ),
+            ],
+          ),
+          loading: () => const CircularProgressIndicator(),
+          error: (error, stackTrace) => Text('Error: $error'),
         ),
       ),
     );

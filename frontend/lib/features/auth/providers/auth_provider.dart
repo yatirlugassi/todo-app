@@ -64,7 +64,7 @@ class Auth extends _$Auth {
 
 // Current user provider
 @riverpod
-UserModel? currentUser(CurrentUserRef ref) {
+Future<UserModel?> currentUser(CurrentUserRef ref) async {
   final authState = ref.watch(authProvider);
   
   if (authState.value == AuthState.authenticated) {

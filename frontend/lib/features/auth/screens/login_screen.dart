@@ -14,6 +14,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -30,6 +31,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _login() async {
+    // Clear any previous errors
+    setState(() {
+      _errorMessage = null;
+    });
+    
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -45,16 +51,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Login failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
         setState(() {
+          _errorMessage = e.toString();
           _isLoading = false;
         });
       }
@@ -67,12 +65,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     ref.listen<AsyncValue<AuthState>>(authProvider, (_, state) {
       state.whenOrNull(
         error: (error, _) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: ${error.toString()}'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          setState(() {
+            _errorMessage = error.toString();
+            _isLoading = false;
+          });
+        },
+        data: (authState) {
+          if (_isLoading && authState == AuthState.authenticated) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
         },
       );
     });
@@ -89,6 +92,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (_errorMessage != null)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red),
+                  ),
+                  child: SelectableText.rich(
+                    TextSpan(
+                      text: 'Error: ',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: _errorMessage,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               TextFormField(
                 controller: _emailController,
                 decoration: const InputDecoration(
