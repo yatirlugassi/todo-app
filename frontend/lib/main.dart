@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:todo_app/core/config/env_config.dart';
+import 'package:todo_app/core/services/supabase_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -9,11 +10,8 @@ Future<void> main() async {
   // Load environment variables
   await dotenv.load(fileName: '.env');
   
-  // Initialize Supabase
-  await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL'] ?? '',
-    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
-  );
+  // Initialize Supabase using the service
+  await SupabaseService.initialize();
   
   runApp(
     // Adding ProviderScope to enable Riverpod in the app
