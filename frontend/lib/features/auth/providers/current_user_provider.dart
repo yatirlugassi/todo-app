@@ -7,7 +7,7 @@ import 'package:todo_app/features/auth/providers/auth_state_provider.dart';
 part 'current_user_provider.g.dart';
 
 @riverpod
-Future<UserModel?> currentUser(Ref ref) async {
+Future<UserModel?> currentUser(CurrentUserRef ref) async {
   final authState = ref.watch(authProvider);
   
   if (authState.value == auth_model.AuthState.authenticated) {
