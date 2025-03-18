@@ -16,6 +16,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    // Initialize auth state
+    Future.microtask(() => ref.read(authProvider.notifier).initialize());
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();

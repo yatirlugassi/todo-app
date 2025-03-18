@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:todo_app/core/models/user_model.dart';
-import 'package:todo_app/core/services/supabase_service.dart';
+import 'package:todo_app/features/auth/services/auth_service.dart';
+
+// Generate the providers
+part 'auth_provider.g.dart';
 
 // Auth state enum to track authentication state
 enum AuthState {
@@ -12,17 +15,24 @@ enum AuthState {
   error,
 }
 
-// Auth state notifier class
-class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
-  AuthNotifier() : super(const AsyncValue.data(AuthState.initial)) {
-    _initialize();
+// Auth service provider
+@riverpod
+AuthService authService(AuthServiceRef ref) {
+  return AuthService();
+}
+
+// Auth state provider
+@riverpod
+class Auth extends _$Auth {
+  @override
+  AsyncValue<AuthState> build() {
+    return const AsyncValue.data(AuthState.initial);
   }
 
-  // Initialize by checking current auth status
-  Future<void> _initialize() async {
+  Future<void> initialize() async {
     state = const AsyncValue.loading();
     try {
-      final isAuthenticated = SupabaseService.isAuthenticated;
+      final isAuthenticated = await ref.read(authServiceProvider).isAuthenticated();
       state = AsyncValue.data(
         isAuthenticated ? AuthState.authenticated : AuthState.unauthenticated,
       );
@@ -31,30 +41,20 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
     }
   }
 
-  // Sign in with email and password
   Future<void> signIn(String email, String password) async {
     state = const AsyncValue.loading();
     try {
-      final response = await SupabaseService.client.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
-      
-      if (response.session == null) {
-        throw Exception('Authentication failed');
-      }
-      
+      await ref.read(authServiceProvider).signIn(email, password);
       state = const AsyncValue.data(AuthState.authenticated);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
     }
   }
 
-  // Sign out
   Future<void> signOut() async {
     state = const AsyncValue.loading();
     try {
-      await SupabaseService.client.auth.signOut();
+      await ref.read(authServiceProvider).signOut();
       state = const AsyncValue.data(AuthState.unauthenticated);
     } catch (e) {
       state = AsyncValue.error(e, StackTrace.current);
@@ -62,21 +62,14 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthState>> {
   }
 }
 
-// Auth provider
-final authProvider = StateNotifierProvider<AuthNotifier, AsyncValue<AuthState>>(
-  (ref) => AuthNotifier(),
-);
-
 // Current user provider
-final currentUserProvider = Provider<UserModel?>((ref) {
+@riverpod
+UserModel? currentUser(CurrentUserRef ref) {
   final authState = ref.watch(authProvider);
   
   if (authState.value == AuthState.authenticated) {
-    final supabaseUser = SupabaseService.currentUser;
-    if (supabaseUser != null) {
-      return UserModel.fromSupabaseUser(supabaseUser);
-    }
+    return ref.read(authServiceProvider).getCurrentUser();
   }
   
   return null;
-});
+}
