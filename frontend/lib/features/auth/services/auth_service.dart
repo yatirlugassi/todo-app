@@ -36,11 +36,19 @@ class AuthService {
     // Save the authentication token
     await _storage.write(key: 'auth_token', value: data['token']);
     
-    // Return user data
-    return UserModel(
+    // Create and store user data
+    final user = UserModel(
       id: data['user']['id'],
       email: data['user']['email'],
     );
+    
+    // Store user data in secure storage as JSON
+    await _storage.write(
+      key: 'user_data',
+      value: jsonEncode(user.toJson()),
+    );
+    
+    return user;
   }
 
   /// Sign out the current user using the backend API
@@ -57,8 +65,9 @@ class AuthService {
       );
     }
     
-    // Clear the stored token
+    // Clear stored data
     await _storage.delete(key: 'auth_token');
+    await _storage.delete(key: 'user_data');
   }
 
   /// Get the current authenticated user data
@@ -69,11 +78,18 @@ class AuthService {
       return null;
     }
     
-    // In a real app, you would typically have an endpoint to get user data
-    // For now, we'll return a minimal user model based on the stored ID
-    return UserModel(
-      id: 'current-user', // In a real app, extract this from JWT or make an API call
-      email: 'user@example.com', // In a real app, this would come from the backend
-    );
+    // Read user data from secure storage
+    final userData = await _storage.read(key: 'user_data');
+    if (userData != null) {
+      try {
+        return UserModel.fromJson(jsonDecode(userData));
+      } catch (e) {
+        print('Error parsing stored user data: $e');
+      }
+    }
+    
+    // If we couldn't get user data from storage, try to get it from the backend
+    // This would be a good place for a "me" endpoint in a real app
+    return null;
   }
 }
